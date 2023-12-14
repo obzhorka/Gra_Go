@@ -31,6 +31,7 @@ public class GoClient extends JFrame implements Runnable {
 
     public static final int PLAYER1 = 1;
     public static final int PLAYER2 = 2;
+    //TODO zmieni kiedy sie otrzyma z Pass Button
     public static final int PLAYER1_WON = 0;
     public static final int PLAYER2_WON = 0;
     public static final int DRAW = 3;
