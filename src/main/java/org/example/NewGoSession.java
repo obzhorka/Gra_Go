@@ -4,7 +4,7 @@ import java.io.*;
 import java.net.*;
 
 
-import static org.example.GoClient.DRAW;
+import static org.example.GoClient.*;
 import static org.example.GoServer.CONTINUE;
 
 
@@ -76,7 +76,28 @@ class NewGoSession implements Runnable {
             } else if (isPassMove(row, column)) {
                 playerPassed[playerIndex] = true;
             }
+
+            if (isPassMove(row, column)) {
+                playerPassed[playerIndex] = true;
+                // If both players have passed, end the game.
+                if (playerPassed[0] && playerPassed[1]) {
+                    endGame();
+                    return;
+                }
+                // If only one player has passed, inform the other player to continue
+                sendPassInfoToOtherPlayer(toOtherPlayer);
+            } else {
+                // Reset the pass status if a regular move is made
+                playerPassed[playerIndex] = false;
+                // Handle normal move...
+            }
         }
+
+    private void sendPassInfoToOtherPlayer(DataOutputStream out) throws IOException {
+        // Send a special code to indicate that the other player has passed
+        out.writeInt(-2); // Example: -2 could be a code for 'other player passed'
+        out.writeInt(-2);
+    }
 
 
     private void sendMove(DataOutputStream out, int row, int column) throws IOException {
@@ -124,8 +145,46 @@ class NewGoSession implements Runnable {
             return playerPassed[0] && playerPassed[1];
         }
 
-        private int calculateScore(char token) {
-            // Calculate the score for a player based on territory and captured stones
-            return 0; // Placeholder for score calculation
+
+    private void endGame() throws IOException {
+        // Implement the logic to calculate scores
+        int scoreB = calculateScore('B');
+        int scoreW = calculateScore('W');
+
+        // Determine the winner or if it's a draw
+        int gameResult;
+        if (scoreB > scoreW) {
+            gameResult = PLAYER1_WON;
+        } else if (scoreW > scoreB) {
+            gameResult = PLAYER2_WON;
+        } else {
+            gameResult = DRAW;
         }
+
+        // Send the game result and scores to both players
+        sendDataToPlayers(gameResult, scoreB, scoreW);
     }
+
+    private int calculateScore(char token) {
+        // Implement the scoring logic
+        // This is a placeholder; actual scoring can be complex in Go
+        int score = 0;
+        // Calculate score based on the number of stones and territories
+        return score;
+    }
+
+    private void sendDataToPlayers(int gameResult, int scoreB, int scoreW) throws IOException {
+        // Send data to Player 1
+        DataOutputStream toPlayer1 = new DataOutputStream(firstPlayer.getOutputStream());
+        toPlayer1.writeInt(gameResult);
+        toPlayer1.writeInt(scoreB);
+        toPlayer1.writeInt(scoreW);
+
+        // Send data to Player 2
+        DataOutputStream toPlayer2 = new DataOutputStream(secondPlayer.getOutputStream());
+        toPlayer2.writeInt(gameResult);
+        toPlayer2.writeInt(scoreB);
+        toPlayer2.writeInt(scoreW);
+    }
+
+}

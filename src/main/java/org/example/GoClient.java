@@ -31,8 +31,8 @@ public class GoClient extends JFrame implements Runnable {
 
     public static final int PLAYER1 = 1;
     public static final int PLAYER2 = 2;
-    public static final int PLAYER1_WON = 1;
-    public static final int PLAYER2_WON = 2;
+    public static final int PLAYER1_WON = 0;
+    public static final int PLAYER2_WON = 0;
     public static final int DRAW = 3;
 
     private char myToken = 'B'; // Black stone
@@ -62,27 +62,40 @@ public class GoClient extends JFrame implements Runnable {
     }
 
     public void init() {
-        JPanel p = new JPanel();
-        p.setLayout(new GridLayout(9, 9, 0, 0));
-        for (int i = 0; i < 9; i++)
-            for (int j = 0; j < 9; j++)
-                p.add(cells[i][j] = new Cell(i, j));
+        // Main panel with a layout to hold both the board and the button
+        JPanel mainPanel = new JPanel();
+        mainPanel.setLayout(new BorderLayout());
+
+        // Game board panel
+        JPanel boardPanel = new JPanel();
+        boardPanel.setLayout(new GridLayout(9, 9, 0, 0)); // 9x9 for Go board
+        for (int i = 0; i < 9; i++) {
+            for (int j = 0; j < 9; j++) {
+                boardPanel.add(cells[i][j] = new Cell(i, j));
+            }
+        }
+        boardPanel.setBorder(new LineBorder(Color.black, 1));
+        mainPanel.add(boardPanel, BorderLayout.CENTER);
+
+        // Pass button
         passButton = new JButton("Pass Turn");
         passButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 passTurn();
             }
         });
-        add(passButton, BorderLayout.SOUTH);
+        mainPanel.add(passButton, BorderLayout.SOUTH); // Add button below the board
 
-        p.setBorder(new LineBorder(Color.black, 1));
+        // Add the main panel to the frame
+        add(mainPanel, BorderLayout.CENTER);
+
+        // Other components like title and status labels
         titleLabel.setHorizontalAlignment(JLabel.CENTER);
         titleLabel.setFont(new Font("SansSerif", Font.BOLD, 16));
         titleLabel.setBorder(new LineBorder(Color.black, 1));
-        statusLabel.setBorder(new LineBorder(Color.black, 1));
-
         add(titleLabel, BorderLayout.NORTH);
-        add(p, BorderLayout.CENTER);
+
+        statusLabel.setBorder(new LineBorder(Color.black, 1));
         add(statusLabel, BorderLayout.SOUTH);
 
         connectToServer();
