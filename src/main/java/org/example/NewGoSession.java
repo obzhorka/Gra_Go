@@ -131,11 +131,13 @@ class NewGoSession implements Runnable {
             }
         }
     }
+    //TODO dodać obsługe prisonerów
     private boolean isCaptured(int row, int column) {
         // Implement logic to check if stones are completely surrounded
         // This is a complex logic that requires checking for empty spaces around a group of connected stones.
         return false; // Placeholder, return true if captured
     }
+    //TODO odadać obsługę
     private void removeStones(int row, int column) {
         // Implement logic to remove captured stones from the board
     }
@@ -164,7 +166,7 @@ class NewGoSession implements Runnable {
         // Send the game result and scores to both players
         sendDataToPlayers(gameResult, scoreB, scoreW);
     }
-
+//TODO zaimplememntować metodę
     private int calculateScore(char token) {
         // Implement the scoring logic
         // This is a placeholder; actual scoring can be complex in Go
