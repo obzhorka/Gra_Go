@@ -1,31 +1,16 @@
 package org.example;
 
-import java.awt.*;
-import java.net.*;
-import java.io.*;
-import java.awt.event.*;
 import javax.swing.*;
 import javax.swing.border.LineBorder;
-
-/**
- *
- * @author aid
- */
-import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.io.*;
-import java.net.*;
-import java.util.Date;
-
-import java.awt.*;
-import java.awt.event.*;
-import java.io.*;
-import java.net.*;
-import java.util.Date;
-import javax.swing.*;
-import javax.swing.border.LineBorder;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.net.Socket;
 
 public class GoClient extends JFrame implements Runnable {
 
@@ -233,6 +218,7 @@ public class GoClient extends JFrame implements Runnable {
         public Cell(int row, int column) {
             this.row = row;
             this.column = column;
+            setPreferredSize(new Dimension(30, 30)); // Rozmiar komrki
             setBorder(new LineBorder(Color.black, 1));
             addMouseListener(new ClickListener());
         }
@@ -251,10 +237,16 @@ public class GoClient extends JFrame implements Runnable {
             super.paintComponent(g);
             if (token == 'B') {
                 g.setColor(Color.BLACK);
-                g.fillOval(10, 10, getWidth() - 20, getHeight() - 20);
+                // współrzędne do rysowania kamienia na przecięciu linii
+                int x = getWidth() / 25 - 5;
+                int y = getHeight() / 25 - 5;
+                g.fillOval(x, y, 10, 10); //rysowanie kamienia
             } else if (token == 'W') {
                 g.setColor(Color.WHITE);
-                g.fillOval(10, 10, getWidth() - 20, getHeight() - 20);
+                // współrzędne do rysowania kamienia na przecięciu linii
+                int x = getWidth() / 25 - 5;
+                int y = getHeight() / 25 - 5;
+                g.fillOval(x, y, 10, 10); // rysowanie kamienia
             }
         }
 
@@ -262,12 +254,12 @@ public class GoClient extends JFrame implements Runnable {
             @Override
             public void mouseClicked(MouseEvent e) {
                 if ((token == ' ') || myTurn) {
-                    setToken(myToken); // Set the token for the current cell
+                    setToken(myToken); // token dla obecnej komórki
                     myTurn = false;
                     rowSelected = row;
                     columnSelected = column;
                     try {
-                        sendMove(); // Send the move to the server
+                        sendMove();
                     } catch (IOException ex) {
                         System.err.println("Error sending move: " + ex);
                     }
@@ -275,6 +267,6 @@ public class GoClient extends JFrame implements Runnable {
                 }
             }
         }
-
     }
+
 }
