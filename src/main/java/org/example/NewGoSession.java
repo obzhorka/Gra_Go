@@ -39,27 +39,21 @@ class NewGoSession implements Runnable {
             toPlayer1.writeInt(1);
 
             while (true) {
-                // Handle moves from players
-                // Example for Player 1
                 handleMove(fromPlayer1, toPlayer1, toPlayer2, 'B', 0);
 
-                // Check for game end
                 if (checkGameEnd()) {
                     int scoreB = calculateScore('B');
                     int scoreW = calculateScore('W');
                     // Send end game signal and scores to players
                     break;
                 }
-
-                // Similar for Player 2
                 handleMove(fromPlayer2, toPlayer2, toPlayer1, 'W', 1);
 
-                // Check for game end
                 if (checkGameEnd()) {
-                    // Calculate scores and send end game signal to players
                     break;
                 }
             }
+
         } catch (IOException ex) {
             System.err.println(ex);
         }
