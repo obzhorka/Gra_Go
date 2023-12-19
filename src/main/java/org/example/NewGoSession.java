@@ -5,7 +5,6 @@ import java.net.*;
 
 
 import static org.example.GoClient.*;
-import static org.example.GoServer.CONTINUE;
 
 
 /**
@@ -17,8 +16,15 @@ class NewGoSession implements Runnable {
     private Socket secondPlayer;
     private char[][] cells = new char[9][9];
     private boolean[] playerPassed = new boolean[2]; // Track if players have passed their turns
+    private char currentPlayer = 'B';
+    private GoBoard goBoard;
+    private DataInputStream fromPlayer1;
+    private DataOutputStream toPlayer1;
+    private DataInputStream fromPlayer2;
+    private DataOutputStream toPlayer2;
 
-    public NewGoSession(Socket firstPlayer, Socket secondPlayer) {
+
+    public NewGoSession(Socket firstPlayer, Socket secondPlayer, GoBoard goBoard) {
         this.firstPlayer = firstPlayer;
         this.secondPlayer = secondPlayer;
         for (int i = 0; i < 9; i++) {
@@ -31,18 +37,25 @@ class NewGoSession implements Runnable {
     @Override
     public void run() {
         try {
-            DataInputStream fromPlayer1 = new DataInputStream(firstPlayer.getInputStream());
-            DataOutputStream toPlayer1 = new DataOutputStream(firstPlayer.getOutputStream());
-            DataInputStream fromPlayer2 = new DataInputStream(secondPlayer.getInputStream());
-            DataOutputStream toPlayer2 = new DataOutputStream(secondPlayer.getOutputStream());
+             fromPlayer1 = new DataInputStream(firstPlayer.getInputStream());
+             toPlayer1 = new DataOutputStream(firstPlayer.getOutputStream());
+            fromPlayer2 = new DataInputStream(secondPlayer.getInputStream());
+            toPlayer2 = new DataOutputStream(secondPlayer.getOutputStream());
 
-            toPlayer1.writeInt(1);
+//            toPlayer1.writeInt(1);
+            // wyslać powiadomienie o start gry
+            toPlayer1.writeChar('B');
+            toPlayer2.writeChar('W');
 
             while (true) {
                 // Handle moves from players
                 // Example for Player 1
-                handleMove(fromPlayer1, toPlayer1, toPlayer2, 'B', 0);
-
+//                handleMove(fromPlayer1, toPlayer1, toPlayer2, 'B', 0);
+                if (currentPlayer == 'B') {
+                    handleMove(fromPlayer1, toPlayer1, toPlayer2, 'B', 0);
+                } else {
+                    handleMove(fromPlayer2, toPlayer2, toPlayer1, 'W', 1);
+                }
                 // Check for game end
                 if (checkGameEnd()) {
                     int scoreB = calculateScore('B');
@@ -51,22 +64,24 @@ class NewGoSession implements Runnable {
                     // Send end game signal and scores to players
                     break;
                 }
+                // Zmień obecnego gracza
+                currentPlayer = (currentPlayer == 'B') ? 'W' : 'B';
+//                // Similar for Player 2
+//                handleMove(fromPlayer2, toPlayer2, toPlayer1, 'W', 1);
 
-                // Similar for Player 2
-                handleMove(fromPlayer2, toPlayer2, toPlayer1, 'W', 1);
-
-                // Check for game end
-                if (checkGameEnd()) {
-                    int scoreB = calculateScore('B');
-                    int scoreW = calculateScore('W');
-                    // Calculate scores and send end game signal to players
-                    sendEndGameSignal(scoreB, scoreW);
-                    break;
-                }
+//                // Check for game end
+//                if (checkGameEnd()) {
+//                    int scoreB = calculateScore('B');
+//                    int scoreW = calculateScore('W');
+//                    // Calculate scores and send end game signal to players
+//                    sendEndGameSignal(scoreB, scoreW);
+//                    break;
+//                }
             }
         } catch (IOException ex) {
             System.err.println(ex);
         }
+
     }
 
         private void handleMove(DataInputStream fromPlayer, DataOutputStream toPlayer, DataOutputStream toOtherPlayer, char token, int playerIndex) throws IOException {
@@ -75,39 +90,115 @@ class NewGoSession implements Runnable {
 
             if (isValidMove(row, column, token)) {
                 cells[row][column] = token;
-                sendMove(toOtherPlayer, row, column);
+                sendMove(toOtherPlayer, row, column, token);
                 checkAndApplyCapture(row, column, token);
             } else if (isPassMove(row, column)) {
                 playerPassed[playerIndex] = true;
             }
 
-            if (isPassMove(row, column)) {
-                playerPassed[playerIndex] = true;
-                // If both players have passed, end the game.
-                if (playerPassed[0] && playerPassed[1]) {
-                    endGame();
-                    return;
-                }
-                // If only one player has passed, inform the other player to continue
-                sendPassInfoToOtherPlayer(toOtherPlayer);
-            } else {
-                // Reset the pass status if a regular move is made
-                playerPassed[playerIndex] = false;
-                // Handle normal move...
+//            if (isPassMove(row, column)) {
+//                playerPassed[playerIndex] = true;
+            // If both players have passed, end the game.
+            if (playerPassed[0] && playerPassed[1]) {
+                endGame();
+//                    return;
+            }
+//            // If only one player has passed, inform the other player to continue
+//            sendPassInfoToOtherPlayer(toOtherPlayer);
+             else{
+                sendMove(toOtherPlayer, row, column, token);
+//                // Reset the pass status if a regular move is made
+//                playerPassed[playerIndex] = false;
+//                // Handle normal move...
             }
         }
+//public NewGoSession(Socket firstPlayer, Socket secondPlayer, GoBoard goBoard) {
+//    this.firstPlayer = firstPlayer;
+//    this.secondPlayer = secondPlayer;
+//    this.goBoard = goBoard; // Store a reference to the GoBoard
+//    for (int i = 0; i < 9; i++) {
+//        for (int j = 0; j < 9; j++) {
+//            cells[i][j] = ' ';
+//        }
+//    }
+//}
+//
+//    @Override
+//    public void run() {
+//        try {
+//            DataInputStream fromPlayer1 = new DataInputStream(firstPlayer.getInputStream());
+//            DataOutputStream toPlayer1 = new DataOutputStream(firstPlayer.getOutputStream());
+//            DataInputStream fromPlayer2 = new DataInputStream(secondPlayer.getInputStream());
+//            DataOutputStream toPlayer2 = new DataOutputStream(secondPlayer.getOutputStream());
+//
+//            toPlayer1.writeInt(1);
+//
+//            while (true) {
+//                // Handle moves from players
+//                // Example for Player 1
+//                handleMove(fromPlayer1, toPlayer1, toPlayer2, 'B', 0);
+//
+//                // Check for game end
+//                if (checkGameEnd()) {
+//                    int scoreB = calculateScore('B');
+//                    int scoreW = calculateScore('W');
+//                    // Send end game signal and scores to players
+//                    break;
+//                }
+//
+//                // Similar for Player 2
+//                handleMove(fromPlayer2, toPlayer2, toPlayer1, 'W', 1);
+//
+//                // Check for game end
+//                if (checkGameEnd()) {
+//                    // Calculate scores and send end game signal to players
+//                    break;
+//                }
+//            }
+//        } catch (IOException ex) {
+//            System.err.println(ex);
+//        }
+//    }
+//
+//    private void handleMove(DataInputStream fromPlayer, DataOutputStream toPlayer, DataOutputStream toOtherPlayer, char token, int playerIndex) throws IOException {
+//        int row = fromPlayer.readInt();
+//        int column = fromPlayer.readInt();
+//
+//        if (isValidMove(row, column, token)) {
+//            cells[row][column] = token;
+//            sendMove(toOtherPlayer, row, column,token);
+//            checkAndApplyCapture(row, column, token);
+//            goBoard.setToken(row, column, token); // Update GoBoard with the move
+//        } else if (isPassMove(row, column)) {
+//            playerPassed[playerIndex] = true;
+//        }
+//
+//        if (isPassMove(row, column)) {
+//            playerPassed[playerIndex] = true;
+//            // If both players have passed, end the game.
+//            if (playerPassed[0] && playerPassed[1]) {
+//                endGame();
+//                return;
+//            }
+//            // If only one player has passed, inform the other player to continue
+//            sendPassInfoToOtherPlayer(toOtherPlayer);
+//        } else {
+//            // Reset the pass status if a regular move is made
+//            playerPassed[playerIndex] = false;
+//            // Handle normal move...
+//        }
+//    }
+//    private void sendPassInfoToOtherPlayer(DataOutputStream out) throws IOException {
+//        // Send a special code to indicate that the other player has passed
+//        out.writeInt(-2); // Example: -2 could be a code for 'other player passed'
+//        out.writeInt(-2);
+//    }
 
-    private void sendPassInfoToOtherPlayer(DataOutputStream out) throws IOException {
-        // Send a special code to indicate that the other player has passed
-        out.writeInt(-2); // Example: -2 could be a code for 'other player passed'
-        out.writeInt(-2);
-    }
 
-
-    private void sendMove(DataOutputStream out, int row, int column) throws IOException {
+    private void sendMove(DataOutputStream out, int row, int column, char token) throws IOException {
             out.writeInt(row);
             out.writeInt(column);
-
+            out.writeChar(token);
     }
 
     private boolean isValidMove(int row, int column, char token) {

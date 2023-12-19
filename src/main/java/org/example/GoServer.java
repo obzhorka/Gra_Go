@@ -5,6 +5,16 @@ import java.net.*;
 import javax.swing.*;
 import java.awt.*;
 import java.util.Date;
+import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.Date;
+
 
 /**
  *
@@ -25,6 +35,7 @@ public class GoServer extends JFrame {
     public static final int PLAYER2_WON = 2;
     public static final int DRAW = 3;
     public static final int CONTINUE = 4;
+    private GoBoard goBoard;
 
     public static void main(String[] args) {
         GoServer display = new GoServer();
@@ -60,7 +71,7 @@ public class GoServer extends JFrame {
 
                 // Starting the thread for two players
                 textArea.append(new Date() + ":     Starting a thread for session " + sessionNum++ + "...\n");
-                NewGoSession task = new NewGoSession(firstPlayer, secondPlayer);
+                NewGoSession task = new NewGoSession(firstPlayer, secondPlayer, goBoard);
                 Thread t1 = new Thread(task);
                 t1.start();
             }

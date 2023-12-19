@@ -8,7 +8,7 @@ import java.util.ArrayList;
 
 public class GoBoard extends JPanel {
     private final int gridSize = 50;
-    private final int numberOfSquares = 9; // Changed to 9x9 grid
+    private final int numberOfSquares = 9;
     private final int boardSize = gridSize * numberOfSquares;
     private char token;
 
