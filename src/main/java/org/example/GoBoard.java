@@ -16,18 +16,24 @@ public class GoBoard extends JPanel {
 
     public GoBoard() {
         setPreferredSize(new Dimension(boardSize, boardSize));
+        //reaguje na kliknięcia myszką na planszy
         addMouseListener(new IntersectionMouseListener());
     }
 
     public void addIntersection(int x, int y, Color color) {
-        intersections.add(new Intersection(x, y, color));
+        intersections.add(new Intersection(x , y , color));
         repaint();
     }
 
+    // Dodaj nowe pola dla przesunięcia planszy
+    private final int offsetX = 50; // Przesunięcie w poziomie
+    private final int offsetY = 50; // Przesunięcie w pionie
+//Dodaje nową intersekcję w określonym rzędzie i kolumnie na podstawie tokena
     public void setToken(int row, int column, char token) {
-        intersections.add(new Intersection((column * gridSize) + 50, (row * gridSize) + 50, token == 'B' ? Color.BLACK : Color.WHITE));
-        repaint();
-   }
+    intersections.add(new Intersection((column * gridSize) + 50, (row * gridSize) + 50, token == 'B' ? Color.BLACK : Color.WHITE));
+    repaint();
+}
+
 
 
     @Override
@@ -39,22 +45,25 @@ public class GoBoard extends JPanel {
             g.fillOval(intersection.getX() - 10, intersection.getY() - 10, 20, 20);
         }
     }
-
+//Rysuje siatkę kwadratów na planszy
 
     private void drawGrid(Graphics g) {
         g.setColor(Color.BLACK);
         for (int i = 0; i <= numberOfSquares; i++) {
-            int xy = i * gridSize;
-            g.drawLine(xy, 0, xy, boardSize);
-            g.drawLine(0, xy, boardSize, xy);
+            int xy = i * gridSize + 50;
+            g.drawLine(xy, 50, xy, boardSize + 50);
+            g.drawLine(50, xy, boardSize + 50, xy);
         }
     }
 
-    private class IntersectionMouseListener extends MouseAdapter {
+
+    protected class IntersectionMouseListener extends MouseAdapter {
         @Override
         public void mouseClicked(MouseEvent e) {
+            //oblicza najbliższą pozycję punktu siatki na planszy
             int x = e.getX();
             int y = e.getY();
+            //w jakiiej kolumnie/rzędzie kwadratu->przecięcie
             int closestX = Math.round((float) x / gridSize) * gridSize;
             int closestY = Math.round((float) y / gridSize) * gridSize;
             addIntersection(closestX, closestY, Color.BLACK);

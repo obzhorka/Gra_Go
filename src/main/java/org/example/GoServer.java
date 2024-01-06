@@ -34,7 +34,7 @@ public class GoServer extends JFrame {
     public static final int PLAYER1_WON = 1;
     public static final int PLAYER2_WON = 2;
     public static final int DRAW = 3;
-    public static final int CONTINUE = 4;
+    //public static final int CONTINUE = 4;
     private GoBoard goBoard;
 
     public static void main(String[] args) {
@@ -51,7 +51,8 @@ public class GoServer extends JFrame {
         setVisible(true);
 
         try {
-            ServerSocket serverSocket = new ServerSocket(8000);
+            //serwer nasłuchujący na porcie 8000
+            ServerSocket serverSocket = new ServerSocket(8001);
             textArea.append(new Date() + ":     Server started at socket 8000\n");
             int sessionNum = 1;
             while (true) {
@@ -70,6 +71,7 @@ public class GoServer extends JFrame {
                 new DataOutputStream(secondPlayer.getOutputStream()).writeInt(PLAYER2);
 
                 // Starting the thread for two players
+                //Uruchamiany jest nowy wątek
                 textArea.append(new Date() + ":     Starting a thread for session " + sessionNum++ + "...\n");
                 NewGoSession task = new NewGoSession(firstPlayer, secondPlayer, goBoard);
                 Thread t1 = new Thread(task);

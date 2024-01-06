@@ -13,7 +13,7 @@ import javax.swing.border.LineBorder;
  */
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-
+//obiekty tej klasy mogą być uruchamiane w osobnych wątkach
 public class GoClient extends JFrame implements Runnable { //, ActionListener
 
     public static final int PLAYER1 = 1;
@@ -83,8 +83,10 @@ public class GoClient extends JFrame implements Runnable { //, ActionListener
 
     private void connectToServer() {
         try {
-            socket = new Socket("localhost", 8000);
+            socket = new Socket("localhost", 8001);
+            //strumień wejściowy danych
             fromServer = new DataInputStream(socket.getInputStream());
+            //strumień wyjściowy danych
             toServer = new DataOutputStream(socket.getOutputStream());
         } catch (IOException ex) {
             System.err.println(ex);
@@ -143,7 +145,7 @@ public class GoClient extends JFrame implements Runnable { //, ActionListener
         toServer.writeInt(rowSelected);
         toServer.writeInt(columnSelected);
     }
-
+//Odbiera informacje od serwera o stanie gry
     private void receiveInfoFromServer() throws IOException {
         int status = fromServer.readInt();
         if (status == PLAYER1_WON) {
@@ -195,7 +197,7 @@ public class GoClient extends JFrame implements Runnable { //, ActionListener
         if (myTurn) {
             try {
                 toServer.writeInt(-1); // Send a special code for pass
-                toServer.writeInt(-1);
+                //toServer.writeInt(-1);
                 myTurn = false;
                 statusLabel.setText("Turn passed, waiting for the other player.");
             } catch (IOException ex) {
@@ -208,12 +210,7 @@ public class GoClient extends JFrame implements Runnable { //, ActionListener
         private int row, column;
         private char token = ' ';
 
-        public Cell(int row, int column) {
-            this.row = row;
-            this.column = column;
-            setBorder(new LineBorder(Color.black, 1));
-            addMouseListener(new ClickListener());
-        }
+
 //        public int getColumn() {
 //            return column;
 //        }
@@ -241,23 +238,7 @@ public class GoClient extends JFrame implements Runnable { //, ActionListener
             }
         }
 
-        private class ClickListener extends MouseAdapter {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                if ((token == ' ') || myTurn) {
-                    setToken(myToken); // Set the token for the current cell
-                    myTurn = false;
-                    rowSelected = row;
-                    columnSelected = column;
-                    try {
-                        sendMove(); // Send the move to the server
-                    } catch (IOException ex) {
-                        System.err.println("Error sending move: " + ex);
-                    }
-                    waiting = false;
-                }
-            }
-        }
+
     }
 }
 

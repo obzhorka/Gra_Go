@@ -11,6 +11,8 @@ import static org.example.GoClient.*;
  *
  * @author aid
  */
+//obiekty tej klasy mogą być uruchamiane w osobnych wątkach
+//implemewntacja gry na podstawiw komunikacji przez gniazda
 class NewGoSession implements Runnable {
     private Socket firstPlayer;
     private Socket secondPlayer;
@@ -27,16 +29,18 @@ class NewGoSession implements Runnable {
     public NewGoSession(Socket firstPlayer, Socket secondPlayer, GoBoard goBoard) {
         this.firstPlayer = firstPlayer;
         this.secondPlayer = secondPlayer;
-        for (int i = 0; i < 9; i++) {
+        //this.goBoard=goBoard;
+        /*for (int i = 0; i < 9; i++) {
             for (int j = 0; j < 9; j++) {
                 cells[i][j] = ' ';
             }
-        }
+        }*/
     }
 
     @Override
     public void run() {
         try {
+            //Tworzy strumienie wejściowe/wyjściowe dla obu graczy
              fromPlayer1 = new DataInputStream(firstPlayer.getInputStream());
              toPlayer1 = new DataOutputStream(firstPlayer.getOutputStream());
             fromPlayer2 = new DataInputStream(secondPlayer.getInputStream());
@@ -65,7 +69,7 @@ class NewGoSession implements Runnable {
                     break;
                 }
                 // Zmień obecnego gracza
-                currentPlayer = (currentPlayer == 'B') ? 'W' : 'B';
+                //currentPlayer = (currentPlayer == 'B') ? 'W' : 'B';
 //                // Similar for Player 2
 //                handleMove(fromPlayer2, toPlayer2, toPlayer1, 'W', 1);
 
