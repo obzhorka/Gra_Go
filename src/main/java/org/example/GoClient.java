@@ -1,18 +1,14 @@
 package org.example;
 
-import java.awt.*;
-import java.net.*;
-import java.io.*;
-import java.awt.event.*;
 import javax.swing.*;
 import javax.swing.border.LineBorder;
-
-/**
- *
- * @author aid
- */
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.net.Socket;
 //obiekty tej klasy mogą być uruchamiane w osobnych wątkach
 public class GoClient extends JFrame implements Runnable { //, ActionListener
 
