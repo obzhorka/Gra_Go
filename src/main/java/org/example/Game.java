@@ -7,6 +7,9 @@ public class Game {
     private Color currentPlayer;
     private boolean gameEnded;
 
+    private int capturedBlackStones = 0;
+    private int capturedWhiteStones = 0;
+
     public Game() {
         board = new Intersection[9][9];
         for (int i = 0; i < 9; i++) {
@@ -24,6 +27,7 @@ public class Game {
         }
 
         board[x][y] = new Intersection(x, y, currentPlayer);
+        checkAndRemoveCapturedGroups(x, y, opponentColor(currentPlayer));
 
 
         // Sprawdź, czy własna grupa nie została zdekapitowana
@@ -35,6 +39,39 @@ public class Game {
 
         currentPlayer = opponentColor(currentPlayer);
         return "Ruch wykonany";
+    }
+    private void checkAndRemoveCapturedGroups(int x, int y, Color opponentColor) {
+        removeGroupIfCaptured(x - 1, y, opponentColor);
+        removeGroupIfCaptured(x + 1, y, opponentColor);
+        removeGroupIfCaptured(x, y - 1, opponentColor);
+        removeGroupIfCaptured(x, y + 1, opponentColor);
+    }
+
+    private void removeGroupIfCaptured(int x, int y, Color playerColor) {
+        if (x < 0 || x >= 9 || y < 0 || y >= 9 || board[x][y].getColor() != playerColor) {
+            return;
+        }
+
+        if (!hasBreath(x, y, playerColor, new boolean[9][9])) {
+            int capturedStones = removeGroup(x, y, playerColor);
+
+            if (playerColor == Color.BLACK) {
+                capturedWhiteStones += capturedStones;
+            } else {
+                capturedBlackStones += capturedStones;
+            }
+        }
+    }
+
+    private int removeGroup(int x, int y, Color groupColor) {
+        if (x < 0 || x >= 9 || y < 0 || y >= 9 || board[x][y].getColor() != groupColor) {
+            return 0;
+        }
+        board[x][y] = new Intersection(x, y, Color.WHITE); // Usuń kamień
+        return 1 + removeGroup(x - 1, y, groupColor)
+                + removeGroup(x + 1, y, groupColor)
+                + removeGroup(x, y - 1, groupColor)
+                + removeGroup(x, y + 1, groupColor);
     }
     private boolean hasBreath(int x, int y, Color playerColor, boolean[][] visited) {
         if (x < 0 || x >= 9 || y < 0 || y >= 9 || visited[x][y]) {
