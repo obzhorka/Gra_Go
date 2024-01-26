@@ -2,6 +2,7 @@ package org.example;
 
 import java.awt.Color;
 
+// reprezentuje punkt przecięcia
 public class Intersection {
     private int x;
     private int y;
@@ -22,6 +23,11 @@ public class Intersection {
     }
 
     public Color getColor() {
+        return color;
+    }
+
+    public Color setColor(Color color) {
+        this.color = color;
         return color;
     }
 }
