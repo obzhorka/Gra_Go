@@ -7,14 +7,8 @@ import java.awt.event.MouseEvent;
 import java.io.*;
 import java.net.*;
 
-/**
- *
- * @author aid
- */
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-
 public class Client {
+
     private JFrame frame;
     private GoBoard board;
     private Socket socket;
@@ -22,7 +16,9 @@ public class Client {
     private BufferedReader in;
     private JButton passButtonB;
     private JButton passButtonW;
-    private Color currentToken = Color.BLACK; // Początkowy kolor
+    private char currentToken = 'B';
+    private boolean hasBlackPassed = false;
+    private boolean hasWhitePassed = false;
 
     public Client(String hostName, int port) throws IOException {
         socket = new Socket(hostName, port);
@@ -32,13 +28,27 @@ public class Client {
         frame = new JFrame("Klient - Plansza Go");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setLayout(new BorderLayout());
+        // Dodaj logikę wyboru rozmiaru planszy
+        String[] boardSizes = {"9x9", "13x13", "19x19"};
+        String selectedSize = (String) JOptionPane.showInputDialog(null,
+                "Wybierz rozmiar planszy:", "Wybór planszy",
+                JOptionPane.QUESTION_MESSAGE, null, boardSizes, boardSizes[0]);
 
-        board = new GoBoard();
+        int boardSize = 9; // Domyślny rozmiar planszy
+        if (selectedSize.equals("13x13")) {
+            boardSize = 13;
+        } else if (selectedSize.equals("19x19")) {
+            boardSize = 19;
+        }
+        board = new GoBoard(boardSize);
+
         // Tworzenie przycisków
-        passButtonB = new JButton("Pasuj Czarny");
-        passButtonW = new JButton("Pasuj Biały");
+        passButtonB = new JButton("Pasuj Biały");
+        passButtonW = new JButton("Pasuj Czarny");
 
-
+        // Dodawanie obsługi zdarzeń dla przycisków
+        passButtonB.addActionListener(e -> passMove('B'));
+        passButtonW.addActionListener(e -> passMove('W'));
 
         // Umieszczanie przycisków na dole ramki
         JPanel buttonPanel = new JPanel(new FlowLayout());
@@ -52,17 +62,19 @@ public class Client {
         frame.setVisible(true);
 
         board.addMouseListener(new MouseAdapter() {
+            private char currentPlayer = 'B';
             @Override
             public void mouseClicked(MouseEvent e) {
                 int gridSize = board.getGridSize();
                 int row = (e.getY() - board.offsetY) / gridSize;
                 int col = (e.getX() - board.offsetX) / gridSize;
+
                 try {
                     out.println(row + "," + col);
                     String response = in.readLine();
-                    if (response != null && response.startsWith("OK")) {
-                        String boardState = in.readLine(); // Odczytanie stanu planszy
-                        updateGameState(boardState);
+                    if (response != null && response.equals("OK")) {
+                        //board.setToken(row, col, currentToken);
+                        currentToken = (currentToken == 'B') ? 'И' : 'B'; // Przykładowo zawsze czarny
                     }
                 } catch (IOException ex) {
                     ex.printStackTrace();
@@ -74,277 +86,32 @@ public class Client {
         frame.pack();
         frame.setVisible(true);
     }
+    private void passMove(char player) {
+        System.out.println(player + " gracz pasuje.");
+        if (player == 'B') {
+            hasBlackPassed = true;
+            board.setBlackPassed(true);
+        } else if (player == 'W') {
+            hasWhitePassed = true;
+            board.setWhitePassed(true);
+        }
 
-
-
-    private void updateGameState(String boardState) {
-        String[] rows = boardState.split("\n");
-        for (int i = 0; i < rows.length; i++) {
-            for (int j = 0; j < rows[i].length(); j++) {
-                char token = rows[i].charAt(j);
-                Color color = token == 'B' ? Color.BLACK : (token == 'W' ? Color.WHITE : null);
-                if (color != null) {
-                    board.setToken(i, j, color);
-                }
+        // Sprawdzenie, czy gra powinna się zakończyć
+        if (hasBlackPassed && hasWhitePassed) {
+            // Zakończ grę
+        } else {
+            // Zresetuj flagę pasowania dla gracza, który nie spasował
+            if (player == 'B') {
+                hasWhitePassed = false;
+                board.setWhitePassed(false);
+            } else if (player == 'W') {
+                hasBlackPassed = false;
+                board.setBlackPassed(false);
             }
         }
     }
-
     public static void main(String[] args) throws IOException {
+
         new Client("localhost", 1234);
     }
 }
-
-//
-//    }
-//
-//    public void init() {
-//        // Main panel with a layout to hold both the board and the button
-//        JPanel mainPanel = new JPanel();
-//        mainPanel.setLayout(new BorderLayout());
-//
-//        // Game board panel
-//        JPanel boardPanel = new JPanel();
-//        boardPanel.setLayout(new GridLayout(9, 9, 0, 0)); // 9x9 for Go board
-//        for (int i = 0; i < 9; i++) {
-//            for (int j = 0; j < 9; j++) {
-//                boardPanel.add(cells[i][j] = new Cell(i, j));
-//            }
-//        }
-//        boardPanel.setBorder(new LineBorder(Color.black, 1));
-//        mainPanel.add(boardPanel, BorderLayout.CENTER);
-//
-//        // Pass button
-//        passButton = new JButton("Pass Turn");
-//        passButton.addActionListener(new ActionListener() {
-//            public void actionPerformed(ActionEvent e) {
-//                passTurn();
-//            }
-//        });
-//        mainPanel.add(passButton, BorderLayout.SOUTH); // Add button below the board
-//
-//        // Add the main panel to the frame
-//        add(mainPanel, BorderLayout.CENTER);
-//
-//        // Other components like title and status labels
-//        titleLabel.setHorizontalAlignment(JLabel.CENTER);
-//        titleLabel.setFont(new Font("SansSerif", Font.BOLD, 16));
-//        titleLabel.setBorder(new LineBorder(Color.black, 1));
-//        add(titleLabel, BorderLayout.NORTH);
-//
-//        statusLabel.setBorder(new LineBorder(Color.black, 1));
-//        add(statusLabel, BorderLayout.SOUTH);
-//
-//        connectToServer();
-//    }
-//
-//    private void connectToServer() {
-//        try {
-//            socket = new Socket("localhost", 8000);
-//            fromServer = new DataInputStream(socket.getInputStream());
-//            toServer = new DataOutputStream(socket.getOutputStream());
-//        } catch (IOException ex) {
-//            System.err.println(ex);
-//        }
-//
-//        Thread thread = new Thread(this);
-//        thread.start();
-//    }
-//
-//    @Override
-//    public void run() {
-//        try {
-//            int player = fromServer.readInt();
-//
-//            if (player == PLAYER1) {
-//                myToken = 'B';
-//                otherToken = 'W';
-//                titleLabel.setText("Player 1 with token 'B'");
-//                statusLabel.setText("Waiting for player 2 to join");
-//                fromServer.readInt();
-//                statusLabel.setText("Player 2 has joined. I start first");
-//                //myTurn = true;
-//            } else if (player == PLAYER2) {
-//                myToken = 'W';
-//                otherToken = 'B';
-//                titleLabel.setText("Player 2 with token 'W'");
-//                statusLabel.setText("Waiting for player 1 to move");
-//                //fromServer.readInt();
-//                //myTurn = true;
-//            }
-//
-//            while (continueToPlay) {
-//                if (player == PLAYER1) {
-//                    waitForPlayerAction();
-//                    sendMove(rowSelected, columnSelected);
-//                    receiveInfoFromServer();
-//                } else if (player == PLAYER2) {
-//                    receiveInfoFromServer();
-//                    waitForPlayerAction();
-//                    sendMove(rowSelected,columnSelected);
-//                }
-//            }
-//        } catch (IOException | InterruptedException ex) {
-//            System.err.println(ex);
-//        }
-//    }
-//
-//    private void waitForPlayerAction() throws InterruptedException {
-//        while (waiting) {
-//            Thread.sleep(100);
-//        }
-//        waiting = true;
-//    }
-//
-//    private void sendMove(int row, int column) throws IOException {
-//        try {
-//            toServer.writeInt(row);
-//            toServer.writeInt(column);
-//        } catch (IOException ex) {
-//            System.err.println("Error sending move: " + ex);
-//        }
-////        toServer.writeInt(rowSelected);
-////        toServer.writeInt(columnSelected);
-//    }
-//    public void actionPerformed(ActionEvent e) {
-//        if (myTurn) {
-//            if (e.getSource() instanceof Cell) {
-//                Cell clickedCell = (Cell) e.getSource();
-//                int row = clickedCell.getRow();
-//                int column = clickedCell.getColumn();
-//                try {
-//                    sendMove(row, column);
-//                } catch (IOException ex) {
-//                    throw new RuntimeException(ex);
-//                }
-//            } else if (e.getSource() == passButton) {
-//                passTurn();
-//            }
-//        }
-//    }
-//
-//    private void receiveInfoFromServer() throws IOException {
-//        int status = fromServer.readInt();
-//        if (status == PLAYER1_WON) {
-//            continueToPlay = false;
-//            if (myToken == 'B') {
-//                statusLabel.setText("I Won! (B)");
-//            } else if (myToken == 'W') {
-//                statusLabel.setText("Player 1 (B) has won!");
-//                receiveMove();
-//            }
-//        } else if (status == PLAYER2_WON) {
-//            continueToPlay = false;
-//            if (myToken == 'W') {
-//                statusLabel.setText("I Won! (W)");
-//            } else if (myToken == 'B') {
-//                statusLabel.setText("Player 2 (W) has won!");
-//                receiveMove();
-//            }
-//        } /*else if (status == DRAW) {
-//            continueToPlay = false;
-//            statusLabel.setText("Game is over, no winner!");
-//            if (myToken == 'W') {
-//                receiveMove();
-//
-//        } */
-//        else {
-//            receiveMove();
-//            statusLabel.setText("My turn");
-//            myTurn = true;
-//        }
-//    }
-//
-//    private void receiveMove() throws IOException {
-//        int row = fromServer.readInt();
-//        int column = fromServer.readInt();
-//
-//        if (row == -1 && column == -1) {
-//            // Handle pass move received
-//            statusLabel.setText("The other player passed their turn.");
-//        } else {
-//            // Handle normal move received
-//            cells[row][column].setToken(otherToken);
-//            statusLabel.setText("Move received, your turn.");
-//        }
-//
-//        myTurn = true; // Now it's this client's turn
-//    }
-//    private void passTurn() {
-//        if (myTurn) {
-//            try {
-//                toServer.writeInt(-1); // Send a special code for pass
-//                toServer.writeInt(-1);
-//                myTurn = false;
-//                statusLabel.setText("Turn passed, waiting for the other player.");
-//            } catch (IOException ex) {
-//                System.err.println("Error passing turn: " + ex);
-//            }
-//        }
-//    }
-//
-//    public class Cell extends JPanel {
-//        private int row, column;
-//        private char token = ' ';
-//
-//        public Cell(int row, int column) {
-//            this.row = row;
-//            this.column = column;
-//            setPreferredSize(new Dimension(30, 30)); // Установите размер каждой ячейки
-//            setBorder(new LineBorder(Color.black, 1));
-//            addMouseListener(new ClickListener());
-//        }
-//        public int getRow() {
-//            return row;
-//        }
-//
-//        public int getColumn() {
-//            return column;
-//        }
-//        public char getToken() {
-//            return token;
-//        }
-//
-//        public void setToken(char c) {
-//            token = c;
-//            repaint();
-//        }
-//
-//        @Override
-//        protected void paintComponent(Graphics g) {
-//            super.paintComponent(g);
-//            if (token == 'B') {
-//                g.setColor(Color.BLACK);
-//                // współrzędne do rysowania kamienia na przecięciu linii
-//                int x = getWidth() / 25 - 5;
-//                int y = getHeight() / 25 - 5;
-//                g.fillOval(x, y, 10, 10); // rysowanie kamienia
-//            } else if (token == 'W') {
-//                g.setColor(Color.WHITE);
-//                // współrzędne do rysowania kamienia na przecięciu linii
-//                int x = getWidth() / 25 - 5;
-//                int y = getHeight() / 25 - 5;
-//                g.fillOval(x, y, 10, 10); // rysowanie kamienia
-//            }
-//        }
-//
-//        private class ClickListener extends MouseAdapter {
-//            @Override
-//            public void mouseClicked(MouseEvent e) {
-//                if ((token == ' ') || myTurn) {
-//                    setToken(myToken); // token dla obecnej komórki
-//                    myTurn = false;
-//                    rowSelected = row;
-//                    columnSelected = column;
-//                    try {
-//                        sendMove(row,column);
-//                    } catch (IOException ex) {
-//                        System.err.println("Error sending move: " + ex);
-//                    }
-//                    waiting = false;
-//                }
-//            }
-//        }
-//    }
-//
-//}
