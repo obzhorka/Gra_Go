@@ -1,0 +1,28 @@
+@startuml
+left to right direction
+actor Gracz
+
+package "System Gry Go" {
+    usecase "Rozpoczęcie Gry" as UC1
+    usecase "Wybór Rozmiaru Planszy" as UC7
+    usecase "Połączenie z Serwerem" as UC8
+    usecase "Wykonanie Ruchu" as UC2
+    usecase "Pasowanie" as UC3
+    usecase "Zakończenie Gry" as UC4
+    usecase "Obliczenie Wyniku" as UC5
+    usecase "Wyświetlenie Wyniku" as UC6
+    usecase "Obsługa Błędów" as UC9
+}
+
+Gracz --> UC1
+UC1 .> UC7 : include
+UC1 .> UC8 : include
+UC8 .> UC9 : extend
+Gracz --> UC2
+Gracz --> UC3
+Gracz --> UC4
+UC4 .> UC5 : include
+UC5 .> UC6 : include
+UC2 .> UC9 : extend
+UC3 .> UC9 : extend
+@enduml
