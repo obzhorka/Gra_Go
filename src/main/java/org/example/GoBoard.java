@@ -4,60 +4,155 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.util.ArrayList;
 import java.util.*;
-import java.awt.Point;
 
 import static java.awt.Color.*;
+
+
 public class GoBoard extends JPanel {
-    private final int gridSize;
+    public static int gridSize;
     private int gameId;
     private int playerId;
     private int row;
     private int col;
-
-    private final int numberOfSquares;
+    public static int numberOfSquares;
     private final int boardSize;
-    private char token;
     private Color currentColor = white;
-    private Color[][] previousBoardColors; // Poprzedni stan planszy
+    private Color[][] previousBoardColors;
+
+    static int blackTerritory = 0;
+    static int whiteTerritory = 0;
+    private static int blackCaptures = 0;
+    private static int whiteCaptures = 0;
 
     private int blackStonesCount = 0;
     private int whiteStonesCount = 0;
-    private int blackCaptures = 0;
-    private int whiteCaptures = 0;
-    int blackTerritory = 0;
-    int whiteTerritory = 0;
 
-    private Color[][] boardColors;
+    public static Color[][] boardColors;
+    public static ArrayList<Intersection> intersections = new ArrayList<>();
+    public boolean hasBlackPassed = false;
+    public boolean hasWhitePassed = false;
 
-    private boolean isFirstMove = true;
+    public void setBlackPassed(boolean hasPassed) {
+        this.hasBlackPassed = hasPassed;
+    }
+    public void setWhitePassed(boolean hasPassed) {
+        this.hasWhitePassed = hasPassed;
+    }
+    private GoBoardState currentState;
+    private Color[][] secondPreviousBoardColors;
+    public GoBoard(int boardSize) {
+        this.numberOfSquares = boardSize;
+        this.currentState = new BlackMoveState(); // Początkowy stan
+        if(this.numberOfSquares==19){
+            this.gridSize=35;
+        }
+        else{
+            this.gridSize = 50;
+        }
+        this.boardSize = this.gridSize * this.numberOfSquares;
 
-
-    private final ArrayList<Intersection> intersections = new ArrayList<>();
-    private ArrayList<Color[][]> boardHistory = new ArrayList<>();
-    private int licznikUsageKo = 0;
-    private boolean hasBlackPassed = false;
-    private boolean hasWhitePassed = false;
-
-
-    public GoBoard() {
-        setPreferredSize(new Dimension(boardSize, boardSize));
+        setPreferredSize(new Dimension(this.boardSize + 100, this.boardSize + 100));
         addMouseListener(new IntersectionMouseListener());
+        boardColors = new Color[numberOfSquares+2][numberOfSquares+2];
+        previousBoardColors = new Color[numberOfSquares + 2][numberOfSquares + 2];
+        secondPreviousBoardColors = new Color[numberOfSquares + 2][numberOfSquares + 2];
+        for (int i = 0; i <= numberOfSquares + 1; i++) {
+            for (int j = 0; j <= numberOfSquares + 1; j++) {
+                previousBoardColors[i][j] = null;
+                secondPreviousBoardColors[i][j] = null;
+            }
+        }
     }
 
+    public void processMove(int x, int y, Color stoneColor) {
+        // Sprawdź, czy pozycja jest ważna i czy pole jest puste
+        if (!GoLogic.isValidPosition(x, y) || GoLogic.getColorAt(x, y) != null) {
+            return; // Nieprawidłowy ruch
+        }
 
-    public void addIntersection(int x, int y, Color color) {
-        intersections.add(new Intersection(x, y, color));
+        // Ustaw kamień na planszy
+        boardColors[x][y] = stoneColor;
+        addIntersection(x * gridSize + offsetX, y * gridSize + offsetY, stoneColor);
+        int[][] directions = {{0, -1}, {0, 1}, {-1, 0}, {1, 0}};
+        Color enemyColor = (stoneColor == BLACK) ? WHITE : BLACK;
+        for (int[] dir : directions) {
+            int newRow = x + dir[0];
+            int newCol = y + dir[1];
+            if (GoLogic.getColorAt(newRow, newCol) == enemyColor && isStoneSurrounded(newRow, newCol, enemyColor)) {
+                removeGroup(newRow, newCol, enemyColor);
+            }
+        }
+        updatePreviousBoardStates();
+        // Zmiana gracza
+        changeState();
         repaint();
     }
+    public void removeGroup(int row, int column, Color stoneColor) {
+        if (!GoLogic.isValidPosition(row, column) || GoLogic.getColorAt(row, column) != stoneColor) return;
 
+        removeStone(row, column);
+        removeGroup(row - 1, column, stoneColor);
+        removeGroup(row + 1, column, stoneColor);
+        removeGroup(row, column - 1, stoneColor);
+        removeGroup(row, column + 1, stoneColor);
+    }
 
-//    public void setToken(int row, int column, char token) {
-//        intersections.add(new Intersection((column * gridSize) + 50, (row * gridSize) + 50, token == 'B' ? Color.BLACK : Color.WHITE));
-//        repaint();
-//   }
+    public void removeStone(int row, int column) {
+        Color removedStoneColor = boardColors[row][column];
+        boardColors[row][column] = null;
+        if (removedStoneColor == BLACK) {
+            blackCaptures--;
+            whiteCaptures++;
+        } else if (removedStoneColor == WHITE) {
+            whiteCaptures--;
+            blackCaptures++;
+        }
+        // Teraz znajdź i usuń odpowiednią skrzyżowanie (Intersection)
+        Intersection toRemove = null;
+        for (Intersection intersection : intersections) {
+            // Zamieniamy współrzędne siatki na współrzędne pikseli i sprawdzamy
+            if (intersection.getX() == row * gridSize + offsetX && intersection.getY() == column * gridSize + offsetY) {
+                toRemove = intersection;
+                break;
+            }
+        }
+        if (toRemove != null) {
+            intersections.remove(toRemove);
+        }
+        repaint(); // Odświeżamy planszę, aby usunięcie było widoczne
+    }
+    private void updatePreviousBoardStates() {
+        for (int i = 0; i <= numberOfSquares + 1; i++) {
+            System.arraycopy(previousBoardColors[i], 0, secondPreviousBoardColors[i], 0, numberOfSquares + 2);
+            System.arraycopy(boardColors[i], 0, previousBoardColors[i], 0, numberOfSquares + 2);
+        }
+    }
 
+    public void calculateFinalScore() {
+        boolean[][] visited = new boolean[GoBoard.numberOfSquares + 1][GoBoard.numberOfSquares + 1];
+
+        for (int i = 1; i <= GoBoard.numberOfSquares; i++) {
+            for (int j = 1; j <= GoBoard.numberOfSquares; j++) {
+                if (!visited[i][j] && GoLogic.getColorAt(i, j) == null) {
+                    Color owner = GoLogic.findTerritoryOwner(i, j, visited);
+                    if (owner != null) {
+                        int territorySize = GoLogic.countTerritory(i, j, new boolean[GoBoard.numberOfSquares + 1][GoBoard.numberOfSquares + 1], owner);
+                        if (owner == BLACK) {
+                            blackTerritory += territorySize;
+                        } else if (owner == WHITE) {
+                            whiteTerritory += territorySize;
+                        }
+                    }
+                }
+            }
+        }
+
+        int blackScore = blackTerritory + blackCaptures;
+        int whiteScore = whiteTerritory + whiteCaptures;
+
+        displayResult(blackScore, whiteScore, blackCaptures, whiteCaptures);
+    }
     private void displayResult(int blackScore, int whiteScore, int blackCaptures, int whiteCaptures) {
         String resultMessage = String.format("Czarne kamienie: %d (Zbite piony: %d, Terytorium: %d)\n" +
                         "Białe kamienie: %d (Zbite piony: %d, Terytorium: %d)",
@@ -70,39 +165,108 @@ public class GoBoard extends JPanel {
         JOptionPane.showMessageDialog(this, resultMessage + "\n\n" + winner,
                 "Koniec gry", JOptionPane.INFORMATION_MESSAGE);
     }
-    @Override
-    //siatka planszy oraz skrzyżowania
-    protected void paintComponent(Graphics g) {
-        super.paintComponent(g);
-        drawGrid(g);
-        for (Intersection intersection : intersections) {
-            g.setColor(intersection.getColor());
-            g.fillOval(intersection.getX() - 10, intersection.getY() - 10, 20, 20);
-
+    public void changeState() {
+        if (currentState instanceof BlackMoveState) {
+            setCurrentState(new WhiteMoveState());
+        } else if (currentState instanceof WhiteMoveState) {
+            setCurrentState(new BlackMoveState());
         }
     }
 
-// kratka
-    private void drawGrid(Graphics g) {
-        g.setColor(Color.BLACK);
-        for (int i = 0; i <= numberOfSquares; i++) {
-            int xy = i * gridSize; //miedzy kwadratami
-            g.drawLine(xy, 0, xy, boardSize);
-            g.drawLine(0, xy, boardSize, xy);
+    public void setCurrentState(GoBoardState state) {
+        this.currentState = state;
+    }
+    public void addIntersection(int x, int y, Color color) {
+        intersections.add(new Intersection(x, y, color));
+        repaint();
+        // Aktualizacja liczników kamieni
+        if (color == BLACK) {
+            blackStonesCount++;
+        } else if (color == WHITE) {
+            whiteStonesCount++;
         }
     }
-    public boolean isValidPosition(int row, int column) {
-        return row >= 0 && row <= numberOfSquares && column >= 0 && column <= numberOfSquares;
-    }
 
+    static int offsetX = 50;
+    static int offsetY = 50;
+    public void setToken(int x, int y) {
+        int closestX = Math.round((float) (x - offsetX) / gridSize);
+        int closestY = Math.round((float) (y - offsetY) / gridSize);
+        this.gameId = gameId;
+        this.playerId = playerId;
+        this.row = row;
+        this.col = col;
 
-    private Color getColorAt(int row, int column) {
-        if (isValidPosition(row, column)) {
-            return boardColors[row][column];
+        if (GoLogic.isValidPosition(closestX, closestY) && GoLogic.getColorAt(closestX, closestY) == null) {
+            Color stoneColor = currentColor == white ? black : white;
+            if (!hasLiberties(closestX, closestY, stoneColor)) {
+                System.out.println("Nie możesz!!");
+                return;
+            }
+            System.out.println("closestX: " + closestX + ", closestY: " + closestY);
+            boardColors[closestX][closestY] = stoneColor;
+            addIntersection(closestX * gridSize + offsetX, closestY * gridSize + offsetY, stoneColor);
+
+            int[][] directions = {{0, -1}, {0, 1}, {-1, 0}, {1, 0}};
+            // Sprawdź, czy umieszczony kamień otacza kamienie przeciwnika
+            Color enemyColor = (stoneColor == BLACK) ? WHITE : BLACK;
+            for (int[] dir : directions) {
+                int newRow = closestX + dir[0];
+                int newCol = closestY + dir[1];
+                if (GoLogic.getColorAt(newRow, newCol) == enemyColor && isStoneSurrounded(newRow, newCol, enemyColor)) {
+                    removeGroup(newRow, newCol, enemyColor);
+                }
+            }
+            currentColor = stoneColor;
+            repaint();
         }
-        return null; // Jeśli pozycja nie jest na planszy
+        // Po zakończeniu ruchu, kopiujemy obecny stan planszy do poprzedniego stanu
+        for (int i = 0; i <= numberOfSquares + 1; i++) {
+            System.arraycopy(previousBoardColors[i], 0, secondPreviousBoardColors[i], 0, numberOfSquares + 2);
+            System.arraycopy(boardColors[i], 0, previousBoardColors[i], 0, numberOfSquares + 2);
+        }
+    }
+    public boolean hasLiberties(int row, int column, Color stoneColor) {
+        if (!GoLogic.isValidPosition(row, column)) {
+            return false;
+        }
+
+        int[][] directions = {{0, -1}, {0, 1}, {-1, 0}, {1, 0}};
+        boolean hasLiberties = false;
+        for (int[] dir : directions) {
+            int newRow = row + dir[0];
+            int newCol = column + dir[1];
+            Color adjacentColor = GoLogic.getColorAt(newRow, newCol);
+            if (adjacentColor == null) {
+                return true; // Jeśli jest przynajmniej jeden wolny oddech
+            }
+            if (adjacentColor != stoneColor) {
+                hasLiberties = true; // Jeśli jest kamień innego koloru, to jest oddech
+            }
+        }
+
+        return hasLiberties;
     }
 
+    private boolean isStoneSurrounded(int row, int column, Color stoneColor) {
+        boolean[][] visited = new boolean[numberOfSquares+2][numberOfSquares+2];
+        return !hasLiberty(row, column, stoneColor, visited);
+    }
+    private boolean hasLiberty(int row, int col, Color stoneColor, boolean[][] visited) {
+        if (!GoLogic.isValidPosition(row, col)) return false;
+        if (visited[row][col]) return false;
+        visited[row][col] = true;
+
+        Color currentColor = GoLogic.getColorAt(row, col);
+        if (currentColor == null) return true; // znaleziono wolność
+        if (currentColor != stoneColor) return false; // napotkano kamień przeciwnika
+
+        // Sprawdza wszystkie kierunki
+        return hasLiberty(row - 1, col, stoneColor, visited) ||
+                hasLiberty(row + 1, col, stoneColor, visited) ||
+                hasLiberty(row, col - 1, stoneColor, visited) ||
+                hasLiberty(row, col + 1, stoneColor, visited);
+    }
 
     public int getGridSize() {
         if(boardSize==19){
@@ -111,88 +275,51 @@ public class GoBoard extends JPanel {
         return 50;
     }
 
-    private void calculateFinalScore() {
-        boolean[][] visited = new boolean[numberOfSquares + 1][numberOfSquares + 1];
-        blackTerritory = 0;
-        whiteTerritory = 0;
-
-        for (int i = 1; i <= numberOfSquares; i++) {
-            for (int j = 1; j <= numberOfSquares; j++) {
-                if (!visited[i][j] && getColorAt(i, j) == null) {
-                    Color owner = findTerritoryOwner(i, j, visited);
-                    if (owner == Color.BLACK) {
-                        blackTerritory++;
-                    } else if (owner == Color.WHITE) {
-                        whiteTerritory++;
-                    }
-                }
-            }
+    @Override
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        drawGrid(g);
+        for (Intersection intersection : intersections) {
+            g.setColor(intersection.getColor());
+            g.fillOval(intersection.getX() - 10, intersection.getY() - 10, 20, 20);
         }
-
-        int blackScore = blackTerritory + blackCaptures;
-        int whiteScore = whiteTerritory + whiteCaptures;
-
-        displayResult(blackScore, whiteScore, blackCaptures, whiteCaptures);
     }
-    private Color findTerritoryOwner(int row, int col, boolean[][] visited) {
-        Queue<Point> queue = new LinkedList<>();
-        Set<Point> territory = new HashSet<>();
-        queue.add(new Point(row, col));
-        territory.add(new Point(row, col));
-        Color owner = null;
-        boolean isTerritory = true;
-
-        while (!queue.isEmpty() && isTerritory) {
-            Point p = queue.poll();
-
-            int r = p.x;
-            int c = p.y;
-            visited[r][c] = true;
-
-            // Sprawdź wszystkich sąsiadów
-            int[][] directions = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
-            for (int[] d : directions) {
-                int nr = r + d[0];
-                int nc = c + d[1];
-
-                if (isValidPosition(nr, nc) && !visited[nr][nc]) {
-                    Color color = getColorAt(nr, nc);
-                    if (color == null) {
-                        queue.add(new Point(nr, nc));
-                        territory.add(new Point(nr, nc));
-                    } else {
-                        if (owner == null) {
-                            owner = color;
-                        } else if (owner != color) {
-                            isTerritory = false;
-                            break;
-                        }
-                    }
-                }
-            }
+    private void drawGrid(Graphics g) {
+        g.setColor(BLACK);
+        for (int i = 0; i <= numberOfSquares; i++) {
+            int xy = i * gridSize + offsetX;
+            g.drawLine(xy, offsetY, xy, boardSize + offsetY);
+            g.drawLine(offsetX, xy, boardSize + offsetX, xy);
         }
-        // Jeśli nie jest terytorium, czyli znaleziono kamienie różnych kolorów,
-        // oznacz wszystkie przecięcia jako nieodwiedzone i zwróć null
-        if (!isTerritory) {
-            for (Point p : territory) {
-                visited[p.x][p.y] = false;
-            }
-            return null;
-        }
-
-        return owner;
     }
 
 
-    private class IntersectionMouseListener extends MouseAdapter {
+    public void setCurrentColor(Color color) {
+        this.currentColor = color;
+    }
+    protected class IntersectionMouseListener extends MouseAdapter {
         @Override
         public void mouseClicked(MouseEvent e) {
+            if (currentColor == black && hasBlackPassed) {
+                currentColor = white;
+            } else if (currentColor == white && hasWhitePassed) {
+                currentColor = black;
+            }
+            if(hasBlackPassed&&hasWhitePassed){
+                calculateFinalScore();
+                return;
+            }
+            if (currentColor == BLACK) {
+                hasWhitePassed = false; // Resetuj flagę pasowania dla białego
+                setWhitePassed(false);
+            } else if (currentColor == WHITE) {
+                hasBlackPassed = false; // Resetuj flagę pasowania dla czarnego
+                setBlackPassed(false);
+            }
             int x = e.getX();
             int y = e.getY();
-            int closestX = Math.round((float) x / gridSize) * gridSize;
-            int closestY = Math.round((float) y / gridSize) * gridSize;
-            addIntersection(closestX, closestY, Color.BLACK);
+            setToken(x, y);
+            currentState.handleMouseClick(x, y, GoBoard.this);
         }
     }
 }
-
