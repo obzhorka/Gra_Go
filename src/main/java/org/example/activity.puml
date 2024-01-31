@@ -1,0 +1,36 @@
+@startuml
+
+
+start
+
+:Uruchomienie Gry;
+:Wybór Rozmiaru Planszy;
+:Połączenie z Serwerem;
+repeat
+  :Gracz wykonuje ruch;
+  if (Czy pasowanie?) then (tak)
+    :Zarejestruj pasowanie;
+    if (Czy obaj gracze spasowali?) then (tak)
+      :Zakończ grę;
+      detach
+    else (nie)
+      :Zmień gracza;
+    endif
+  else (nie)
+    :Sprawdzenie poprawności ruchu;
+    if (Czy ruch jest błędny?) then (tak)
+      :Obsługa błędu;
+    else (nie)
+      :Aktualizacja stanu planszy;
+      :Sprawdzenie zbicia kamieni;
+      :Sprawdzenie samobójstwa;
+      :Zmień gracza;
+    endif
+  endif
+repeat while (Czy gra trwa?) is (tak)
+
+:Obliczenie Wyniku;
+:Wyświetlenie Wyniku;
+stop
+
+@enduml
