@@ -1,0 +1,39 @@
+@startuml
+actor Gracz
+participant "GoBoard" as Board
+participant "GoLogic" as Logic
+participant "Server" as Server
+
+Gracz -> Board : mouseClicked(x, y)
+activate Board
+
+Board -> Board : processMove(x, y, currentColor)
+activate Board
+
+Board -> Logic : isValidPosition(x, y)
+activate Logic
+Logic --> Board
+deactivate Logic
+
+Board -> Logic : getColorAt(x, y)
+activate Logic
+Logic --> Board
+deactivate Logic
+
+Board -> Logic : processMove(x, y, currentColor)
+activate Logic
+
+Logic -> Board : addIntersection(x, y, currentColor)
+Board --> Logic
+deactivate Logic
+
+Board -> Server : sendMove(x, y)
+activate Server
+Server -> Server : validateMove(x, y)
+Server --> Board : moveResponse
+deactivate Server
+
+Board -> Board : changeState()
+Board --> Gracz
+deactivate Board
+@enduml
