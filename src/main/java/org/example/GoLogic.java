@@ -84,6 +84,38 @@ public class GoLogic extends Component {
     public static boolean isValidPosition(int row, int column) {
         return row >= 0 && row <= GoBoard.numberOfSquares && column >= 0 && column <= GoBoard.numberOfSquares;
     }
+    static boolean isValidNotDeath(int row, int column, Color stoneColor) {
+        if (!isValidPosition(row, column) || getColorAt(row, column) != null) {
+            return false; // Ruch musi być na pustej pozycji
+        }
+
+        // Sprawdzamy, czy kamień ma przynajmniej jedno oddechy
+        if (GoBoard.hasLiberties(row, column, stoneColor)) {
+            return false; // Jeśli kamień ma oddechy, ruch jest dozwolony
+        }
+
+        // Jeśli kamień nie ma oddechów, sprawdzamy, czy po ruchu zostanie go otoczony
+        boardColors[row][column] = stoneColor; // Tymczasowo umieszczamy kamień na planszy
+        boolean isKo = true;
+
+        // Sprawdzamy, czy po ruchu zostanie otoczony
+        int[][] directions = {{0, -1}, {0, 1}, {-1, 0}, {1, 0}};
+        for (int[] dir : directions) {
+            int newRow = row + dir[0];
+            int newCol = column + dir[1];
+            Color enemyColor = (stoneColor == Color.BLACK) ? Color.WHITE : Color.BLACK;
+            if (getColorAt(newRow, newCol) == enemyColor && GoBoard.isStoneSurrounded(newRow, newCol, enemyColor)) {
+                isKo = false; // Jeśli ruch otoczy przeciwnika, to nie jest to sytuacja Ko
+            }
+        }
+
+
+
+        boardColors[row][column] = null; // Usuwamy tymczasowo umieszczony kamień
+
+        return isKo;
+    }
+
     public static Color getColorAt(int row, int column) {
         if (isValidPosition(row, column)) {
             return boardColors[row][column];

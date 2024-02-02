@@ -196,7 +196,9 @@ public class GoBoard extends JPanel {
         this.playerId = playerId;
         this.row = row;
         this.col = col;
-
+        if (GoLogic.isValidNotDeath(closestX, closestY, currentColor)) {
+            return; // Jeśli próba naruszenia zasady ko, to nie pozwalamy na ten ruch
+        }
         if (GoLogic.isValidPosition(closestX, closestY) && GoLogic.getColorAt(closestX, closestY) == null) {
             Color stoneColor = currentColor == white ? black : white;
             if (!hasLiberties(closestX, closestY, stoneColor)) {
@@ -226,7 +228,7 @@ public class GoBoard extends JPanel {
             System.arraycopy(boardColors[i], 0, previousBoardColors[i], 0, numberOfSquares + 2);
         }
     }
-    public boolean hasLiberties(int row, int column, Color stoneColor) {
+    public static boolean hasLiberties(int row, int column, Color stoneColor) {
         if (!GoLogic.isValidPosition(row, column)) {
             return false;
         }
@@ -248,11 +250,11 @@ public class GoBoard extends JPanel {
         return hasLiberties;
     }
 
-    private boolean isStoneSurrounded(int row, int column, Color stoneColor) {
+    static boolean isStoneSurrounded(int row, int column, Color stoneColor) {
         boolean[][] visited = new boolean[numberOfSquares+2][numberOfSquares+2];
         return !hasLiberty(row, column, stoneColor, visited);
     }
-    private boolean hasLiberty(int row, int col, Color stoneColor, boolean[][] visited) {
+    private static boolean hasLiberty(int row, int col, Color stoneColor, boolean[][] visited) {
         if (!GoLogic.isValidPosition(row, col)) return false;
         if (visited[row][col]) return false;
         visited[row][col] = true;
